@@ -1,4 +1,4 @@
-project_eurler
+Project Euler
 ==============
 
 Solutions to Project Euler problems
