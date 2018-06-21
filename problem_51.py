@@ -1,3 +1,6 @@
+import prime_helpers
+
+
 # Helper methods
 def check_prime(primes, number):
 	for p in primes:
@@ -6,10 +9,9 @@ def check_prime(primes, number):
 	return True
 
 def generate_masks(n_digits):
-	''' 1 means we can replace the digit, 0 means keep. 
-		The first digit should always be a 0. '''
+	''' 1 means we can replace the digit, 0 means keep. '''
 	if n_digits == 1:
-		return [[0]]
+		return [[0], [1]]
 	masks_minus_one = generate_masks(n_digits-1)
 	masks = []
 	for mask in masks_minus_one:
@@ -17,10 +19,13 @@ def generate_masks(n_digits):
 	return masks
 
 def generate_replacements(n_digits, number, mask):
-	# If n_digits > len(number), add 0's at the start
+	''' Generate the numbers with digits replaced. 
+		If we replace the first digit, we use 1..9, otherwise 0..9.
+	'''
 	number_as_list = [v for v in str(number)]
 	replacements = []
-	for i in range(0,9+1):
+	range_values = range(10) if mask[0] == 0 else range(1,10)
+	for i in range_values:
 		replacement = int(
 			''.join([v if m == 0 else str(i) for (v,m) in zip(number_as_list, mask)])
 		)
@@ -29,25 +34,19 @@ def generate_replacements(n_digits, number, mask):
 
 
 # Variables - skip first digit
-primes_so_far = [2,3,5,7]
-largest_number, smallest_prime = 1, 2
-max_digits = 7
+largest_number, smallest_prime = 1, 2 # largest no. digits, smallest prime so far
+max_digits = 6
+
+
+# Load in or generate the relevant primes
+primes = prime_helpers.load_primes(upper=10**max_digits)
+#primes = prime_helpers.generate_primes(upper=10**max_digits)
+primes_set = set(primes) # O(1) amortised set membership 
 
 
 # For every number of digits (2, 3, ...) we do the following:
 for n_digits in range(2,max_digits+1):
 	print "Trying %s digits." % n_digits
-
-	# First generate all new primes with this number of digits (using the primes so far).
-	print "Finding primes."
-	new_primes = []
-	for number in range(10**(n_digits-1), 10**n_digits):
-		if n_digits >= 5 and number % 10**4 == 0:
-			print "Still generating primes (%s)." % number
-		if check_prime(primes=primes_so_far, number=number):
-			new_primes.append(number), primes_so_far.append(number)
-
-	primes_set = set(primes_so_far) # O(1) amortised set membership 
 
 	# Generate all possible masks of digit replacements.
 	print "Generating masks."
@@ -57,7 +56,9 @@ for n_digits in range(2,max_digits+1):
 	# Then for each prime and mask, generate all replaced digits and see whether they
 	# are also primes. Count the number. 
 	print "Generating replaced digits and counting primes."
-	for prime in new_primes:
+	primes_n_digits = [p for p in primes if p >= 10**(n_digits-1)  and p < 10**n_digits]
+
+	for prime in primes_n_digits:
 		for mask in masks:
 			replacements = generate_replacements(n_digits=n_digits, number=prime, mask=mask)
 			
@@ -78,6 +79,7 @@ for n_digits in range(2,max_digits+1):
 	# Stop when we find an eight prime value family.
 	if number_of_primes == 8:
 		print "Found an eight prime value family. Smallest prime is %s." % smallest_prime
+		break
 
 	# Otherwise, try again with more digits
 	print "Best prime value family so far: %s digits, smallest prime is %s." % (largest_number, smallest_prime)
